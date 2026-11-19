@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#203040">
+  <title>數字火車｜課堂抽號器 Pro</title>
+  <style>
+    :root{
+      --bg:#f6f1e8;
+      --panel:#fffdf8;
+      --card:#ffffff;
+      --text:#203040;
+      --muted:#6e675f;
+      --border:#d7cec2;
+      --accent:#d9633c;
+      --accent-soft:#f7dfd5;
+      --green:#5c8d6b;
+      --gold:#e7b24b;
+      --red:#b54a4a;
+      --shadow:0 8px 28px rgba(32,48,64,.08);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+    button,select,input{font:inherit}
+    .wrap{max-width:1180px;margin:0 auto;padding:26px 18px 48px}
+    .hero{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}
+    .hero h1{margin:0;font-size:clamp(30px,5vw,50px);line-height:1.08}
+    .hero p{margin:8px 0 0;color:var(--muted)}
+    .badge{background:var(--text);color:#fff;border-radius:999px;padding:8px 12px;font-size:13px;font-weight:800;white-space:nowrap}
+    .layout{display:grid;grid-template-columns:1.18fr .82fr;gap:18px}
+    .panel{background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:18px;box-shadow:var(--shadow)}
+    .settings{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    label{font-weight:800;font-size:14px}
+    select,input[type="number"]{
+      width:100%;margin-top:6px;padding:12px 13px;border:1px solid var(--border);
+      border-radius:12px;background:#fff;color:var(--text);font-size:16px
+    }
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}
+    .stat{background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px;text-align:center}
+    .stat small{color:var(--muted);display:block}
+    .stat strong{display:block;margin-top:4px;font-size:23px;font-variant-numeric:tabular-nums}
+    .draw-area{margin-top:16px;background:#fff;border:1px solid var(--border);border-radius:18px;padding:22px;min-height:192px}
+    .draw-area h2{margin:0 0 12px;font-size:15px;color:var(--muted)}
+    .balls{min-height:112px;display:flex;flex-wrap:wrap;gap:14px;justify-content:center;align-items:center}
+    .ball{
+      width:94px;height:94px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+      background:#fff;border:3px solid var(--text);font-size:38px;font-weight:900;
+      box-shadow:0 5px 16px rgba(32,48,64,.1);animation:pop .18s ease-out
+    }
+    .ball.wild{font-size:20px;white-space:pre-line;text-align:center;line-height:1.1}
+    @keyframes pop{from{transform:scale(.75);opacity:.25}to{transform:scale(1);opacity:1}}
+    @media (prefers-reduced-motion:reduce){.ball{animation:none}}
+    .countdown-wrap{margin-top:14px}
+    .countdown-head{display:flex;justify-content:space-between;gap:10px;font-size:14px}
+    .bar-bg{height:12px;background:#ece4da;border-radius:999px;overflow:hidden;margin-top:8px}
+    .bar{height:100%;background:var(--green);width:0%;transition:width .15s linear}
+    .round-bar{background:var(--accent)}
+    .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+    button{border:0;border-radius:12px;min-height:46px;padding:12px 16px;font-weight:900;cursor:pointer}
+    button:disabled{opacity:.42;cursor:not-allowed}
+    .primary{background:var(--accent);color:#fff;flex:1}
+    .secondary{background:#fff;color:var(--text);border:1px solid var(--border)}
+    .dark{background:var(--text);color:#fff}
+    .msg{margin-top:12px;color:var(--muted);font-size:14px;line-height:1.55}
+    .side-stack{display:grid;gap:18px}
+    .panel h3{margin:0;font-size:18px}
+    .progress-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .subtle{color:var(--muted);font-size:14px}
+    .history{display:flex;flex-wrap:wrap;gap:8px;min-height:92px;margin-top:12px}
+    .chip{min-width:43px;height:43px;border:1px solid var(--border);border-radius:10px;background:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:900}
+    .tools{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+    .switch-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #eee6dc}
+    .switch-row:last-child{border-bottom:0}
+    .switch{display:flex;align-items:center;gap:8px}
+    input[type="checkbox"]{width:20px;height:20px;accent-color:var(--accent)}
+    .fullscreen-mode .hero,.fullscreen-mode .settings,.fullscreen-mode .stats,.fullscreen-mode .side-stack,.fullscreen-mode .msg{display:none!important}
+    .fullscreen-mode .layout{display:block}
+    .fullscreen-mode .panel{box-shadow:none;border:0;background:transparent;padding:0}
+    .fullscreen-mode .draw-area{min-height:70vh;border:0;background:transparent;display:flex;flex-direction:column;justify-content:center}
+    .fullscreen-mode .draw-area h2{font-size:22px;text-align:center}
+    .fullscreen-mode .balls{min-height:360px}
+    .fullscreen-mode .ball{width:160px;height:160px;font-size:70px}
+    .fullscreen-mode .ball.wild{font-size:34px}
+    .fullscreen-mode .countdown-wrap{max-width:900px;margin:0 auto 18px}
+    .fullscreen-mode .actions{justify-content:center}
+    .fullscreen-mode .primary{flex:0 1 360px;font-size:22px;min-height:60px}
+    .footer{text-align:center;color:var(--muted);font-size:13px;margin-top:22px}
+    @media(max-width:900px){.layout{grid-template-columns:1fr}.settings{grid-template-columns:1fr 1fr}.stats{grid-template-columns:1fr 1fr}}
+    @media(max-width:560px){.settings{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.ball{width:72px;height:72px;font-size:30px}.tools{grid-template-columns:1fr}.wrap{padding:16px 10px 36px}.badge{display:none}}
+  </style>
+</head>
+<body>
+<main class="wrap" id="app">
+  <header class="hero">
+    <div>
+      <h1>數字火車｜課堂抽號器 Pro</h1>
+      <p>一次抽多張・預估遊戲時間・回合倒數・實際計時・課堂投影大字模式</p>
+    </div>
+    <div class="badge">GitHub Pages Ready</div>
+  </header>
+
+  <div class="layout">
+    <section class="panel">
+      <div class="settings">
+        <label>每次抽幾張？
+          <select id="drawCount">
+            <option value="1">1 張（原版）</option>
+            <option value="2">2 張</option>
+            <option value="3">3 張</option>
+            <option value="4">4 張</option>
+            <option value="5">5 張</option>
+          </select>
+        </label>
+        <label>每次決策時間
+          <select id="decisionSec">
+            <option value="10">10 秒</option>
+            <option value="15">15 秒</option>
+            <option value="20">20 秒</option>
+            <option value="30" selected>30 秒</option>
+            <option value="45">45 秒</option>
+            <option value="60">60 秒</option>
+          </select>
+        </label>
+        <label>目標整局時間
+          <select id="targetMin">
+            <option value="0">不設定</option>
+            <option value="5">5 分鐘</option>
+            <option value="8">8 分鐘</option>
+            <option value="10">10 分鐘</option>
+            <option value="15">15 分鐘</option>
+            <option value="20">20 分鐘</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><small>預估本局</small><strong id="estimate">10:00</strong></div>
+        <div class="stat"><small>實際時間</small><strong id="elapsed">00:00</strong></div>
+        <div class="stat"><small>回合倒數</small><strong id="roundTimer">00:30</strong></div>
+        <div class="stat"><small>已抽 / 20</small><strong id="progress">0 / 20</strong></div>
+      </div>
+
+      <div class="draw-area">
+        <h2>本次抽出的號碼</h2>
+        <div id="currentBalls" class="balls" aria-live="polite">
+          <span class="subtle">按「開始並抽號」開始遊戲</span>
+        </div>
+      </div>
+
+      <div class="countdown-wrap">
+        <div class="countdown-head">
+          <span>本回合思考時間</span>
+          <strong id="roundStatus">尚未開始</strong>
+        </div>
+        <div class="bar-bg"><div id="roundProgressBar" class="bar"></div></div>
+      </div>
+
+      <div class="actions">
+        <button id="drawBtn" class="primary" type="button">開始並抽號</button>
+        <button id="pauseBtn" class="secondary" type="button" disabled>暫停</button>
+        <button id="nextBtn" class="secondary" type="button" disabled>略過倒數／下一批</button>
+        <button id="bigBtn" class="dark" type="button">大字模式</button>
+        <button id="resetBtn" class="secondary" type="button">重新開始</button>
+      </div>
+
+      <div id="message" class="msg" aria-live="polite">
+        原版一局填滿 20 格。若一次抽多張，畫面會依序顯示同一批號碼。
+      </div>
+    </section>
+
+    <aside class="side-stack">
+      <section class="panel">
+        <div class="progress-head">
+          <div>
+            <h3>遊戲進度</h3>
+            <div id="roundInfo" class="subtle">預計 20 個抽牌批次</div>
+          </div>
+          <strong id="remaining">剩餘 20 格</strong>
+        </div>
+        <div class="bar-bg"><div id="gameProgressBar" class="bar round-bar"></div></div>
+        <div id="targetInfo" class="subtle" style="margin-top:10px">尚未設定整局時間目標</div>
+      </section>
+
+      <section class="panel">
+        <div class="progress-head">
+          <h3>本局抽牌紀錄</h3>
+          <span id="deckLeft" class="subtle">牌庫剩 40 張</span>
+        </div>
+        <div id="history" class="history"><span class="subtle">尚未抽牌</span></div>
+      </section>
+
+      <section class="panel">
+        <h3>課堂工具</h3>
+        <div class="switch-row">
+          <span>倒數結束提示音</span>
+          <label class="switch"><input id="soundToggle" type="checkbox" checked> 開啟</label>
+        </div>
+        <div class="switch-row">
+          <span>倒數歸零後自動抽下一批</span>
+          <label class="switch"><input id="autoDrawToggle" type="checkbox"> 開啟</label>
+        </div>
+        <div class="tools">
+          <button id="copyHistoryBtn" class="secondary" type="button">下載抽牌紀錄</button>
+          <button id="clearHistoryBtn" class="secondary" type="button">清除顯示紀錄</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h3>時間估算</h3>
+        <p class="subtle" style="line-height:1.65">
+          預估時間 = 抽牌批次 × 每回合決策時間。<br>
+          例如每次抽 2 張、每回合 30 秒：20 格 ÷ 2 = 10 回合，預估約 5 分鐘。
+        </p>
+      </section>
+    </aside>
+  </div>
+
+  <div class="footer">Numbers Train Classroom Tool Pro</div>
+</main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+
+  const app = $('app');
+  const drawCount = $('drawCount');
+  const decisionSec = $('decisionSec');
+  const targetMin = $('targetMin');
+  const estimate = $('estimate');
+  const elapsed = $('elapsed');
+  const roundTimer = $('roundTimer');
+  const progress = $('progress');
+  const currentBalls = $('currentBalls');
+  const drawBtn = $('drawBtn');
+  const pauseBtn = $('pauseBtn');
+  const nextBtn = $('nextBtn');
+  const bigBtn = $('bigBtn');
+  const resetBtn = $('resetBtn');
+  const message = $('message');
+  const roundInfo = $('roundInfo');
+  const remaining = $('remaining');
+  const gameProgressBar = $('gameProgressBar');
+  const roundProgressBar = $('roundProgressBar');
+  const roundStatus = $('roundStatus');
+  const history = $('history');
+  const deckLeft = $('deckLeft');
+  const targetInfo = $('targetInfo');
+  const soundToggle = $('soundToggle');
+  const autoDrawToggle = $('autoDrawToggle');
+  const copyHistoryBtn = $('copyHistoryBtn');
+  const clearHistoryBtn = $('clearHistoryBtn');
+
+  let deck = [];
+  let drawn = [];
+  let visibleHistory = [];
+  let started = false;
+  let paused = false;
+  let startTime = 0;
+  let pauseStartedAt = 0;
+  let pausedTotal = 0;
+  let gameTimer = null;
+
+  let roundDuration = 30;
+  let roundRemaining = 30;
+  let roundTimerId = null;
+  let roundStartedAt = 0;
+  let roundPauseOffset = 0;
+
+  function makeDeck(){
+    const d = [];
+    for(let n=1;n<=10;n++) d.push(String(n));
+    for(let n=11;n<=19;n++){ d.push(String(n),String(n)); }
+    for(let n=20;n<=30;n++) d.push(String(n));
+    d.push('萬用');
+    return d;
+  }
+
+  function shuffle(a){
+    for(let i=a.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [a[i],a[j]]=[a[j],a[i]];
+    }
+    return a;
+  }
+
+  function fmt(sec){
+    sec=Math.max(0,Math.floor(sec));
+    const m=Math.floor(sec/60), s=sec%60;
+    return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  }
+
+  function updateEstimate(){
+    const c=Number(drawCount.value)||1;
+    const sec=Number(decisionSec.value)||30;
+    const batches=Math.ceil(20/c);
+    estimate.textContent=fmt(batches*sec);
+    roundInfo.textContent=`預計 ${batches} 個抽牌批次（每次 ${c} 張）`;
+    roundDuration=sec;
+    if(!started){
+      roundRemaining=sec;
+      roundTimer.textContent=fmt(sec);
+    }
+    const target=Number(targetMin.value)||0;
+    if(target>0){
+      const estimated=batches*sec;
+      const diff=target*60-estimated;
+      targetInfo.textContent=diff>=0
+        ? `目標 ${target} 分鐘；目前設定約可提前 ${fmt(diff)} 完成`
+        : `目標 ${target} 分鐘；目前設定約會超過 ${fmt(Math.abs(diff))}`;
+    }else{
+      targetInfo.textContent='尚未設定整局時間目標';
+    }
+  }
+
+  function updateGameTimer(){
+    if(!started||paused) return;
+    elapsed.textContent=fmt((Date.now()-startTime-pausedTotal)/1000);
+  }
+
+  function startGameTimer(){
+    stopGameTimer();
+    gameTimer=setInterval(updateGameTimer,500);
+    updateGameTimer();
+  }
+
+  function stopGameTimer(){
+    if(gameTimer){ clearInterval(gameTimer); gameTimer=null; }
+  }
+
+  function beep(){
+    if(!soundToggle.checked) return;
+    try{
+      const AudioCtx=window.AudioContext||window.webkitAudioContext;
+      if(!AudioCtx) return;
+      const ctx=new AudioCtx();
+      const osc=ctx.createOscillator();
+      const gain=ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value=880;
+      gain.gain.value=.07;
+      osc.start();
+      osc.stop(ctx.currentTime+.18);
+      osc.addEventListener('ended',()=>ctx.close());
+    }catch(e){}
+  }
+
+  function stopRoundCountdown(){
+    if(roundTimerId){ clearInterval(roundTimerId); roundTimerId=null; }
+  }
+
+  function startRoundCountdown(){
+    stopRoundCountdown();
+    roundDuration=Number(decisionSec.value)||30;
+    roundRemaining=roundDuration;
+    roundStartedAt=Date.now();
+    roundPauseOffset=0;
+    roundStatus.textContent='思考中';
+    roundTimer.textContent=fmt(roundRemaining);
+    roundProgressBar.style.width='100%';
+
+    roundTimerId=setInterval(()=>{
+      if(paused) return;
+      const elapsedSec=(Date.now()-roundStartedAt-roundPauseOffset)/1000;
+      roundRemaining=Math.max(0,roundDuration-elapsedSec);
+      roundTimer.textContent=fmt(Math.ceil(roundRemaining));
+      roundProgressBar.style.width=`${(roundRemaining/roundDuration)*100}%`;
+
+      if(roundRemaining<=0){
+        stopRoundCountdown();
+        roundTimer.textContent='00:00';
+        roundProgressBar.style.width='0%';
+        roundStatus.textContent='時間到';
+        beep();
+        if(drawn.length<20){
+          if(autoDrawToggle.checked){
+            setTimeout(()=>drawBatch(),350);
+          }else{
+            message.textContent='本回合時間到，可以按「抽下一批」。';
+          }
+        }
+      }
+    },200);
+  }
+
+  function render(){
+    const used=Math.min(20,drawn.length);
+    progress.textContent=`${used} / 20`;
+    remaining.textContent=`剩餘 ${Math.max(0,20-used)} 格`;
+    gameProgressBar.style.width=`${used/20*100}%`;
+    deckLeft.textContent=`牌庫剩 ${deck.length} 張`;
+
+    history.innerHTML='';
+    if(visibleHistory.length===0){
+      history.innerHTML='<span class="subtle">尚未抽牌</span>';
+    }else{
+      visibleHistory.forEach(v=>{
+        const chip=document.createElement('span');
+        chip.className='chip';
+        chip.textContent=v==='萬用'?'★':v;
+        chip.title=v==='萬用'?'萬用牌':v;
+        history.appendChild(chip);
+      });
+    }
+
+    if(used>=20){
+      drawBtn.disabled=true;
+      nextBtn.disabled=true;
+      pauseBtn.disabled=true;
+      drawBtn.textContent='本局完成';
+      stopGameTimer();
+      stopRoundCountdown();
+      roundStatus.textContent='完成';
+      message.textContent=`本局完成！實際時間 ${elapsed.textContent}。可以記錄分數或重新開始。`;
+    }
+  }
+
+  function renderBatch(batch){
+    currentBalls.innerHTML='';
+    batch.forEach(v=>{
+      const ball=document.createElement('div');
+      ball.className=v==='萬用'?'ball wild':'ball';
+      ball.textContent=v==='萬用'?'★\\n萬用':v;
+      currentBalls.appendChild(ball);
+    });
+  }
+
+  function drawBatch(){
+    if(paused || drawn.length>=20) return;
+
+    if(!started){
+      started=true;
+      startTime=Date.now();
+      drawCount.disabled=true;
+      decisionSec.disabled=true;
+      targetMin.disabled=true;
+      pauseBtn.disabled=false;
+      nextBtn.disabled=false;
+      drawBtn.textContent='抽下一批';
+      startGameTimer();
+    }
+
+    stopRoundCountdown();
+
+    const count=Math.max(1,Math.min(5,Number(drawCount.value)||1));
+    const need=Math.min(count,20-drawn.length,deck.length);
+    const batch=[];
+
+    for(let i=0;i<need;i++){
+      const v=deck.pop();
+      drawn.push(v);
+      visibleHistory.push(v);
+      batch.push(v);
+    }
+
+    renderBatch(batch);
+    message.textContent=`本批 ${batch.length} 張：請依序填入空格。倒數結束後再抽下一批。`;
+    render();
+
+    if(drawn.length<20) startRoundCountdown();
+  }
+
+  function togglePause(){
+    if(!started || drawn.length>=20) return;
+    if(!paused){
+      paused=true;
+      pauseStartedAt=Date.now();
+      pauseBtn.textContent='繼續';
+      drawBtn.disabled=true;
+      nextBtn.disabled=true;
+      roundStatus.textContent='已暫停';
+      message.textContent='遊戲已暫停。';
+    }else{
+      const pauseLen=Date.now()-pauseStartedAt;
+      paused=false;
+      pausedTotal+=pauseLen;
+      roundPauseOffset+=pauseLen;
+      pauseBtn.textContent='暫停';
+      drawBtn.disabled=false;
+      nextBtn.disabled=false;
+      roundStatus.textContent='思考中';
+      message.textContent='遊戲繼續。';
+      updateGameTimer();
+    }
+  }
+
+  function resetGame(){
+    deck=shuffle(makeDeck());
+    drawn=[];
+    visibleHistory=[];
+    started=false;
+    paused=false;
+    startTime=0;
+    pauseStartedAt=0;
+    pausedTotal=0;
+    roundDuration=Number(decisionSec.value)||30;
+    roundRemaining=roundDuration;
+    stopGameTimer();
+    stopRoundCountdown();
+
+    elapsed.textContent='00:00';
+    roundTimer.textContent=fmt(roundDuration);
+    roundStatus.textContent='尚未開始';
+    roundProgressBar.style.width='0%';
+    currentBalls.innerHTML='<span class="subtle">按「開始並抽號」開始遊戲</span>';
+
+    drawBtn.disabled=false;
+    nextBtn.disabled=true;
+    drawBtn.textContent='開始並抽號';
+    pauseBtn.disabled=true;
+    pauseBtn.textContent='暫停';
+
+    drawCount.disabled=false;
+    decisionSec.disabled=false;
+    targetMin.disabled=false;
+
+    message.textContent='原版一局填滿 20 格。若一次抽多張，畫面會依序顯示同一批號碼。';
+    updateEstimate();
+    render();
+  }
+
+  function toggleBigMode(){
+    app.classList.toggle('fullscreen-mode');
+    bigBtn.textContent=app.classList.contains('fullscreen-mode')?'離開大字模式':'大字模式';
+  }
+
+  function downloadHistory(){
+    if(drawn.length===0){
+      message.textContent='目前沒有抽牌紀錄可以下載。';
+      return;
+    }
+    const text=[
+      '數字火車｜本局抽牌紀錄',
+      `每次抽牌張數：${drawCount.value}`,
+      `每次決策時間：${decisionSec.value} 秒`,
+      `實際時間：${elapsed.textContent}`,
+      '',
+      drawn.map((v,i)=>`${i+1}. ${v}`).join('\n')
+    ].join('\n');
+
+    const blob=new Blob([text],{type:'text/plain;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download='數字火車_抽牌紀錄.txt';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  drawCount.addEventListener('change',updateEstimate);
+  decisionSec.addEventListener('change',updateEstimate);
+  targetMin.addEventListener('change',updateEstimate);
+  drawBtn.addEventListener('click',drawBatch);
+  nextBtn.addEventListener('click',drawBatch);
+  pauseBtn.addEventListener('click',togglePause);
+  resetBtn.addEventListener('click',resetGame);
+  bigBtn.addEventListener('click',toggleBigMode);
+  copyHistoryBtn.addEventListener('click',downloadHistory);
+  clearHistoryBtn.addEventListener('click',()=>{
+    visibleHistory=[];
+    render();
+    message.textContent='畫面上的歷史紀錄已清除；本局抽牌狀態不受影響。';
+  });
+
+  resetGame();
+})();
+</script>
+</body>
+</html>
